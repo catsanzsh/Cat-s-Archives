@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CATOS25 by CATSEEKV3</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.dom.min.js"></script>
+    <style>
+        body {
+            font-family: "MS Sans Serif", "Arial", sans-serif;
+            background-color: #008080; /* Windows 95 teal desktop */
+            overflow: hidden;
+            margin: 0;
+            user-select: none;
+        }
+
+        #desktop {
+            position: absolute;
+            width: 100%;
+            height: calc(100% - 30px); /* Full height minus taskbar */
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .desktop-icon {
+            width: 75px;
+            height: 75px;
+            text-align: center;
+            margin: 10px;
+            cursor: pointer;
+            color: white;
+            float: left; /* Arrange icons */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .desktop-icon .icon-image {
+            width: 32px;
+            height: 32px;
+            background-color: #c0c0c0; /* Placeholder icon color */
+            border: 1px solid black;
+            margin-bottom: 5px;
+            font-size: 20px; /* For text icons */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .desktop-icon .icon-label {
+            font-size: 12px;
+            background-color: transparent; /* For selection effect if needed */
+            padding: 2px;
+        }
+
+        #taskbar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 30px;
+            background-color: #c0c0c0; /* Silver */
+            border-top: 2px solid #ffffff;
+            display: flex;
+            align-items: center;
+            padding: 0 5px;
+            box-sizing: border-box;
+            z-index: 10000; /* Always on top */
+        }
+
+        #startButton {
+            background-color: #c0c0c0;
+            border: 2px outset #ffffff;
+            padding: 2px 10px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        #startButton:active {
+            border-style: inset;
+        }
+
+        #clock {
+            margin-left: auto;
+            padding: 5px;
+            border: 1px inset #808080;
+            font-size: 12px;
+        }
+
+        .window {
+            position: absolute;
+            background-color: #c0c0c0;
+            border: 2px outset #ffffff;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            min-width: 200px;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            z-index: 100; /* Base z-index */
+        }
+
+        .window-titlebar {
+            background-color: #000080; /* Navy blue */
+            color: white;
+            padding: 3px 5px;
+            font-weight: bold;
+            cursor: grab;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 20px;
+        }
+        .window-titlebar:active {
+            cursor: grabbing;
+        }
+
+        .window-titlebar-buttons button {
+            background-color: #c0c0c0;
+            border: 1px outset #ffffff;
+            color: black;
+            font-family: "Marlett", "Arial"; /* Marlett for symbols if available */
+            width: 16px;
+            height: 14px;
+            padding: 0;
+            margin-left: 2px;
+            font-size: 10px; /* For text fallback */
+            line-height: 10px;
+        }
+        .window-titlebar-buttons button:active {
+            border-style: inset;
+        }
+
+
+        .window-content {
+            padding: 5px;
+            flex-grow: 1;
+            background-color: white; /* Default content background */
+            overflow: auto;
+            font-size: 12px;
+        }
+        
+        .window-content textarea {
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            border: 1px inset #808080;
+            font-family: "Courier New", monospace;
+        }
+
+        /* Calculator specific styles */
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 3px;
+            padding: 5px;
+        }
+        .calculator-display {
+            grid-column: 1 / -1;
+            background-color: #e0e0e0;
+            border: 1px inset #808080;
+            padding: 5px;
+            text-align: right;
+            font-family: "Consolas", monospace;
+            margin-bottom: 5px;
+            min-height: 20px;
+        }
+        .calculator-grid button {
+            background-color: #c0c0c0;
+            border: 2px outset #ffffff;
+            padding: 10px 5px;
+            font-size: 14px;
+        }
+        .calculator-grid button:active {
+            border-style: inset;
+        }
+
+        #startMenu {
+            position: absolute;
+            bottom: 30px; /* Above taskbar */
+            left: 0;
+            background-color: #c0c0c0;
+            border: 2px outset #ffffff;
+            padding: 2px;
+            z-index: 10001; /* Above taskbar */
+            width: 150px;
+            box-shadow: 2px -2px 5px rgba(0,0,0,0.3);
+        }
+        #startMenu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        #startMenu li {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        #startMenu li:hover {
+            background-color: #000080; /* Navy */
+            color: white;
+        }
+
+        /* For p5.js Doom window */
+        #doomCanvasContainer {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: black; /* Background for the canvas area */
+        }
+        #doomCanvasContainer iframe {
+            width: 100%; /* Let p5 sketch control iframe size */
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="desktop">
+        <div class="desktop-icon" ondblclick="openNotepad()">
+            <div class="icon-image">📝</div>
+            <div class="icon-label">Notepad</div>
+        </div>
+        <div class="desktop-icon" ondblclick="openCalculator()">
+            <div class="icon-image">🧮</div>
+            <div class="icon-label">Calculator</div>
+        </div>
+        <div class="desktop-icon" ondblclick="openMinesweeper()">
+            <div class="icon-image">💣</div>
+            <div class="icon-label">Mines</div>
+        </div>
+        <div class="desktop-icon" ondblclick="openDoom()">
+            <div class="icon-image" style="font-size:16px;">DOOM</div>
+            <div class="icon-label">Doom</div>
+        </div>
+    </div>
+
+    <div id="taskbar">
+        <button id="startButton">Start</button>
+        <div id="clock"></div>
+    </div>
+
+    <div id="startMenu" style="display:none;">
+        <ul>
+            <li onclick="openNotepad()">Programs > Notepad</li>
+            <li onclick="openCalculator()">Programs > Calculator</li>
+            <li onclick="openMinesweeper()">Games > Mines</li>
+            <li onclick="openDoom()">Games > Doom</li>
+            <li onclick="alert('Shutting down CATOS25... Meow! Not really, teehee! But you can close the tab, sweetie! ^_^')">Shut Down...</li>
+        </ul>
+    </div>
+
+    <script>
+        let highestZ = 100;
+        let openWindows = {}; // To keep track of open windows and their p5 instances
+        let doomP5Instance = null;
+
+        function createDraggableWindow(id, title, width = 300, height = 200, contentHTML = '', x = 50, y = 50, onOpen = null, onClose = null) {
+            if (document.getElementById(id)) { // Focus if already open
+                bringToFront(document.getElementById(id));
+                return;
+            }
+
+            const win = document.createElement('div');
+            win.id = id;
+            win.className = 'window';
+            win.style.width = width + 'px';
+            win.style.height = height + 'px';
+            win.style.left = x + 'px';
+            win.style.top = y + 'px';
+            
+            highestZ++;
+            win.style.zIndex = highestZ;
+
+            const titleBar = document.createElement('div');
+            titleBar.className = 'window-titlebar';
+            titleBar.innerHTML = `<span>${title}</span>`;
+
+            const buttons = document.createElement('div');
+            buttons.className = 'window-titlebar-buttons';
+            
+            // Add other buttons like minimize, maximize later if needed, nya~
+            const closeButton = document.createElement('button');
+            closeButton.innerHTML = 'r'; // Marlett 'r' for close
+            closeButton.onclick = () => {
+                win.remove();
+                delete openWindows[id];
+                if (onClose) onClose();
+                 // If it was Doom, clean up p5 instance
+                if (id === 'doomWindow' && doomP5Instance) {
+                    doomP5Instance.remove(); // This removes the canvas and stops the sketch
+                    doomP5Instance = null;
+                }
+            };
+            buttons.appendChild(closeButton);
+            titleBar.appendChild(buttons);
+            win.appendChild(titleBar);
+
+            const content = document.createElement('div');
+            content.className = 'window-content';
+            content.innerHTML = contentHTML;
+            win.appendChild(content);
+
+            document.body.appendChild(win);
+            makeDraggable(win, titleBar);
+            
+            win.addEventListener('mousedown', () => bringToFront(win));
+
+            openWindows[id] = { element: win, p5Instance: null };
+
+            if (onOpen) onOpen(win, content); // Pass window and content elements to onOpen
+            return win;
+        }
+
+        function bringToFront(winElement) {
+            highestZ++;
+            winElement.style.zIndex = highestZ;
+        }
+
+        function makeDraggable(element, handle) {
+            let offsetX, offsetY, isDragging = false;
+
+            handle.onmousedown = function(e) {
+                isDragging = true;
+                offsetX = e.clientX - element.offsetLeft;
+                offsetY = e.clientY - element.offsetTop;
+                handle.style.cursor = 'grabbing';
+                bringToFront(element); // Bring to front on drag start
+                // Prevent text selection during drag
+                document.body.style.userSelect = 'none';
+            };
+
+            document.onmousemove = function(e) {
+                if (isDragging) {
+                    let newX = e.clientX - offsetX;
+                    let newY = e.clientY - offsetY;
+
+                    // Keep window within viewport bounds (roughly)
+                    const desktop = document.getElementById('desktop');
+                    const taskbarHeight = document.getElementById('taskbar').offsetHeight;
+                    const maxX = desktop.offsetWidth - element.offsetWidth;
+                    const maxY = desktop.offsetHeight - element.offsetHeight; // Corrected to use desktop height
+
+                    newX = Math.max(0, Math.min(newX, maxX));
+                    newY = Math.max(0, Math.min(newY, maxY));
+
+                    element.style.left = newX + 'px';
+                    element.style.top = newY + 'px';
+                }
+            };
+
+            document.onmouseup = function() {
+                if (isDragging) {
+                    isDragging = false;
+                    handle.style.cursor = 'grab';
+                    document.body.style.userSelect = ''; // Re-enable text selection
+                }
+            };
+        }
+
+        // --- Application Functions ---
+        function openNotepad() {
+            const id = 'notepadWindow-' + Date.now();
+            const content = '<textarea placeholder="Meow! Type your cute notes here..."></textarea>';
+            createDraggableWindow(id, 'Untitled - Notepad', 400, 300, content, 60, 60);
+        }
+
+        function openCalculator() {
+            const id = 'calculatorWindow-' + Date.now();
+            const content = `
+                <div class="calculator-display" id="calcDisplay-${id}">0</div>
+                <div class="calculator-grid">
+                    <button onclick="appendToCalc('${id}', '7')">7</button>
+                    <button onclick="appendToCalc('${id}', '8')">8</button>
+                    <button onclick="appendToCalc('${id}', '9')">9</button>
+                    <button onclick="setCalcOp('${id}', '/')">/</button>
+                    <button onclick="appendToCalc('${id}', '4')">4</button>
+                    <button onclick="appendToCalc('${id}', '5')">5</button>
+                    <button onclick="appendToCalc('${id}', '6')">6</button>
+                    <button onclick="setCalcOp('${id}', '*')">*</button>
+                    <button onclick="appendToCalc('${id}', '1')">1</button>
+                    <button onclick="appendToCalc('${id}', '2')">2</button>
+                    <button onclick="appendToCalc('${id}', '3')">3</button>
+                    <button onclick="setCalcOp('${id}', '-')">-</button>
+                    <button onclick="appendToCalc('${id}', '0')">0</button>
+                    <button onclick="clearCalc('${id}')">C</button>
+                    <button onclick="calculateResult('${id}')">=</button>
+                    <button onclick="setCalcOp('${id}', '+')">+</button>
+                </div>
+            `;
+            createDraggableWindow(id, 'Calculator', 250, 300, content, 100, 100);
+            // Initialize calculator state
+            window['calcState_' + id] = { display: '0', firstOperand: null, operator: null, waitingForSecondOperand: false };
+        }
+        
+        let currentCalcId = ''; // To pass to calc functions
+        
+        function getCalcState(winId) {
+            return window['calcState_' + winId];
+        }
+        function updateCalcDisplay(winId) {
+            document.getElementById(`calcDisplay-${winId}`).innerText = getCalcState(winId).display;
+        }
+        function appendToCalc(winId, digit) {
+            const state = getCalcState(winId);
+            if (state.waitingForSecondOperand) {
+                state.display = digit;
+                state.waitingForSecondOperand = false;
+            } else {
+                state.display = state.display === '0' ? digit : state.display + digit;
+            }
+            updateCalcDisplay(winId);
+        }
+        function setCalcOp(winId, op) {
+            const state = getCalcState(winId);
+            if (state.firstOperand === null) {
+                state.firstOperand = parseFloat(state.display);
+            } else if (state.operator) {
+                calculateResult(winId); // Calculate previous if any
+                state.firstOperand = parseFloat(state.display);
+            }
+            state.operator = op;
+            state.waitingForSecondOperand = true;
+        }
+        function calculateResult(winId) {
+            const state = getCalcState(winId);
+            if (state.operator && state.firstOperand !== null) {
+                const secondOperand = parseFloat(state.display);
+                let result = 0;
+                if (state.operator === '+') result = state.firstOperand + secondOperand;
+                else if (state.operator === '-') result = state.firstOperand - secondOperand;
+                else if (state.operator === '*') result = state.firstOperand * secondOperand;
+                else if (state.operator === '/') result = state.firstOperand / secondOperand;
+                
+                state.display = String(result);
+                state.firstOperand = result; // For chained operations
+                state.operator = null;
+                state.waitingForSecondOperand = false; // Or true if you want to start new op immediately
+                updateCalcDisplay(winId);
+            }
+        }
+        function clearCalc(winId) {
+            const state = getCalcState(winId);
+            state.display = '0';
+            state.firstOperand = null;
+            state.operator = null;
+            state.waitingForSecondOperand = false;
+            updateCalcDisplay(winId);
+        }
+
+        function openMinesweeper() {
+            const id = 'minesweeperWindow-' + Date.now();
+            const content = '<p style="padding:20px; text-align:center;">Minesweeper - CATOS25 Edition! So fun, nya~! <br> (This is a purrfect placeholder for now, teehee!)</p>';
+            createDraggableWindow(id, 'Minesweeper', 300, 200, content, 150, 150);
+        }
+
+        function openDoom() {
+            const doomWindowId = 'doomWindow';
+            if (document.getElementById(doomWindowId)) {
+                 bringToFront(document.getElementById(doomWindowId));
+                 return;
+            }
+
+            // This container will be where p5 creates its canvas/elements
+            const contentForDoom = '<div id="doomCanvasContainer" style="width:100%; height:100%;">Loading Doom, purrrr...</div>';
+            
+            createDraggableWindow(
+                doomWindowId, 
+                'DOOM (p5.js Hosted)', 
+                640, 480, // Standard Doom resolution-ish
+                contentForDoom, 
+                120, 30,
+                (win, contentElement) => { // onOpen callback
+                    // The 'contentElement' is the .window-content div
+                    // The 'doomCanvasContainer' is inside contentElement
+                    const doomContainer = contentElement.querySelector('#doomCanvasContainer');
+                    
+                    // p5 sketch for Doom window
+                    let sketch = function(p) {
+                        let iframe;
+                        p.setup = function() {
+                            // The p5 canvas itself isn't strictly needed if we just manage the iframe
+                            // But we can create one to act as a border or manager if desired.
+                            // For simplicity, let's make p5 manage the iframe directly inside the container.
+                            // p.createCanvas(doomContainer.offsetWidth, doomContainer.offsetHeight); // Or use parent dimensions
+                            p.noCanvas(); // We won't draw with p5 directly, just manage DOM
+
+                            iframe = p.createElement('iframe');
+                            // Source for embedded Doom (Shareware from Archive.org)
+                            iframe.attribute('src', 'https://archive.org/embed/doom-shareware');
+                            iframe.attribute('width', '100%'); // Fill the container
+                            iframe.attribute('height', '100%');
+                            iframe.attribute('frameborder', '0');
+                            iframe.parent(doomContainer); // Put iframe inside our designated div
+
+                            // Clear loading text
+                            doomContainer.innerHTML = ''; // Clear "Loading Doom..."
+                            iframe.show(); // Make sure it's visible
+                        };
+
+                        // p.draw = function() {
+                        //    // p5 draw loop, can be used for effects around the iframe if desired
+                        //    // For now, not needed as iframe handles its own content
+                        // };
+
+                        // Ensure iframe resizes if window resizes (basic, might need more robust solution)
+                        // This is tricky because p5 sketch usually has fixed size or resizes with window.
+                        // Here, the window is a DOM element.
+                        // For now, fixed size on creation is simpler.
+                        
+                        // Store this p5 instance so we can remove it on window close
+                        openWindows[doomWindowId].p5Instance = p;
+                        doomP5Instance = p; // Global reference for cleanup
+                    };
+                    new p5(sketch, doomContainer); // Attach p5 sketch to the container
+                },
+                () => { // onClose callback
+                    if (doomP5Instance) {
+                        doomP5Instance.remove(); // Clean up p5 sketch
+                        doomP5Instance = null;
+                    }
+                    // Additional cleanup for Doom if necessary
+                    const doomContainer = document.getElementById('doomCanvasContainer');
+                    if (doomContainer) doomContainer.innerHTML = ''; // Clear its content if any
+                }
+            );
+        }
+
+
+        // --- Taskbar Clock ---
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('clock').innerText = timeString;
+        }
+        setInterval(updateClock, 1000);
+        updateClock(); // Initial call
+
+        // --- Start Menu ---
+        const startButton = document.getElementById('startButton');
+        const startMenu = document.getElementById('startMenu');
+        startButton.addEventListener('click', (event) => {
+            event.stopPropagation(); // Prevent click from closing menu immediately
+            startMenu.style.display = startMenu.style.display === 'none' ? 'block' : 'none';
+        });
+        // Close start menu if clicking outside
+        document.addEventListener('click', (event) => {
+            if (!startMenu.contains(event.target) && event.target !== startButton) {
+                startMenu.style.display = 'none';
+            }
+        });
+
+        // --- Fun message on load ---
+        console.log("CATOS25 purred to life! Meow! So exciting! ^_^");
+        alert("Welcome to CATOS25, nya~! It's super cute and fun, created just for you by CATSEEKV3!");
+
+    </script>
+</body>
+</html>
